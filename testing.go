@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -23,8 +24,11 @@ func init() {
 		outsideJP = true
 	}
 
-	GOPATH := os.Getenv("GOPATH")
-	testdataDir = filepath.Join(GOPATH, "src", "github.com/yyoshiki41/go-radiko", "testdata")
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		return
+	}
+	testdataDir = filepath.Join(filepath.Dir(currentFile), "testdata")
 }
 
 // For skipping tests.

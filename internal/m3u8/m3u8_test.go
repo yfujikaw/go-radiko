@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 func readTestData(fileName string) *os.File {
-	const testDir = "github.com/yyoshiki41/go-radiko/testdata"
-
-	GOPATH := os.Getenv("GOPATH")
-	f, err := os.Open(filepath.Join(GOPATH, "src", testDir, fileName))
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("failed to get current file path")
+	}
+	rootDir := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
+	f, err := os.Open(filepath.Join(rootDir, "testdata", fileName))
 	if err != nil {
 		panic(err)
 	}

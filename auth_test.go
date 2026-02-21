@@ -3,8 +3,6 @@ package radiko
 import (
 	"context"
 	"encoding/base64"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -35,7 +33,7 @@ func TestAuth1Fms(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	authToken, length, offset, err := c.Auth1Fms(ctx)
+	authToken, length, offset, err := c.Auth1(ctx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -51,23 +49,15 @@ func TestAuth2Fms(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	authToken, length, offset, err := c.Auth1Fms(ctx)
+	authToken, length, offset, err := c.Auth1(ctx)
 	if err != nil {
 		t.Error(err)
 	}
 
-	pngPath := filepath.Join(testdataDir, "authkey.png")
-	f, err := os.Open(pngPath)
-	if err != nil {
-		t.Error(err)
-	}
-	b := make([]byte, length)
-	if _, err = f.ReadAt(b, offset); err != nil {
-		t.Error(err)
-	}
-	partialKey := base64.StdEncoding.EncodeToString(b)
+	b := radikoAuthkeyValue[offset : offset+length]
+	partialKey := base64.StdEncoding.EncodeToString([]byte(b))
 
-	_, err = c.Auth2Fms(ctx, authToken, partialKey)
+	_, err = c.Auth2(ctx, authToken, partialKey)
 	if err != nil {
 		t.Error(err)
 	}
@@ -95,7 +85,7 @@ func TestVerifyAuth2FmsResponse(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		err := verifyAuth2FmsResponse(c.slc)
+		err := verifyAuth2Response(c.slc)
 		if c.expectedErr {
 			if err == nil {
 				t.Error("Should detect an error.")
