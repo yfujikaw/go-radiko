@@ -3,6 +3,8 @@ package radiko
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -41,9 +43,14 @@ func (c *Client) TimeshiftPlaylistM3U8(ctx context.Context, stationID string, st
 	}
 	query := u.Query()
 	query.Set("station_id", stationID)
+	query.Set("start_at", prog.Ft)
 	query.Set("ft", prog.Ft)
+	query.Set("end_at", prog.To)
 	query.Set("to", prog.To)
+	query.Set("preroll", "2")
 	query.Set("l", "15") // must?
+	query.Set("lsid", randomLSID())
+	query.Set("type", "b")
 	u.RawQuery = query.Encode()
 
 	methods := []string{"POST", "GET"}
@@ -115,11 +122,18 @@ func (c *Client) requestTimeshiftPlaylistURI(ctx context.Context, method, endpoi
 	}
 	req = req.WithContext(ctx)
 	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("pragma", "no-cache")
+	req.Header.Set("Origin", defaultEndpoint)
+	req.Header.Set("Referer", defaultEndpoint+"/")
 	req.Header.Set(radikoAppHeader, radikoApp)
 	req.Header.Set(radikoAppVersionHeader, radikoAppVersion)
 	req.Header.Set(radikoUserHeader, radikoUser)
 	req.Header.Set(radikoDeviceHeader, radikoDevice)
+	if c.AreaID() != "" {
+		req.Header.Set("X-Radiko-AreaId", c.AreaID())
+	}
 	if c.AuthToken() != "" {
 		req.Header.Set(radikoAuthTokenHeader, c.AuthToken())
 	}
@@ -152,6 +166,15 @@ func snippet(body []byte) string {
 		return s
 	}
 	return s[:max] + "..."
+}
+
+func randomLSID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		// fallback keeps behavior deterministic if entropy is unavailable.
+		return "00000000000000000000000000000000"
+	}
+	return hex.EncodeToString(b)
 }
 
 // GetTimeshiftURL returns a timeshift url for web browser.

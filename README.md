@@ -105,6 +105,8 @@ $ go run ./examples/main.go
 $ go run ./examples/auth/main.go
 # Play live stream (requires ffplay)
 $ go run ./examples/stream/main.go -id LFR
+# Play timeshift stream (requires ffplay)
+$ go run ./examples/timeshift/main.go -id LFR -s 20260221180000
 ```
 
 ## Projects using go-radiko
