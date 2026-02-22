@@ -59,7 +59,7 @@ func (c *Client) TimeshiftPlaylistM3U8(ctx context.Context, stationID string, st
 }
 
 func (c *Client) timeshiftPlaylistEndpoint(ctx context.Context, stationID string) (string, error) {
-	apiEndpoint := apiPath(apiV3, path.Join("station/stream/pc_html5", stationID+".xml"))
+	apiEndpoint := path.Join(apiV3, "station/stream/pc_html5", stationID+".xml")
 	req, err := c.newRequest(ctx, "GET", apiEndpoint, &Params{})
 	if err != nil {
 		return "", err
