@@ -103,6 +103,8 @@ It is possible to try [examples](https://github.com/yyoshiki41/go-radiko/tree/ma
 $ go run ./examples/main.go
 # Get & Set auth_token
 $ go run ./examples/auth/main.go
+# Play live stream (requires ffplay)
+$ go run ./examples/stream/main.go -id LFR
 ```
 
 ## Projects using go-radiko
@@ -110,7 +112,7 @@ $ go run ./examples/auth/main.go
 - [yyoshiki41/radigo](https://github.com/yyoshiki41/radigo) - Record a radiko program.
 - [juntaki/toyotomimi](https://github.com/juntaki/toyotomimi)
 
-## License 
+## License
 
 Licensed under the GPLv3 license for all open source applications.
 
