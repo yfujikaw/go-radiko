@@ -3,6 +3,7 @@ package radiko
 import (
 	"bytes"
 	"context"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -29,7 +30,12 @@ func (c *Client) TimeshiftPlaylistM3U8(ctx context.Context, stationID string, st
 		return "", err
 	}
 
-	u, err := url.Parse(timeshiftPlaylistEndpoint)
+	endpoint, err := c.timeshiftPlaylistEndpoint(ctx, stationID)
+	if err != nil {
+		return "", err
+	}
+
+	u, err := url.Parse(endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -50,6 +56,56 @@ func (c *Client) TimeshiftPlaylistM3U8(ctx context.Context, stationID string, st
 		lastErr = reqErr
 	}
 	return "", lastErr
+}
+
+func (c *Client) timeshiftPlaylistEndpoint(ctx context.Context, stationID string) (string, error) {
+	apiEndpoint := apiPath(apiV3, path.Join("station/stream/pc_html5", stationID+".xml"))
+	req, err := c.newRequest(ctx, "GET", apiEndpoint, &Params{})
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := c.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("failed to get station stream info: status=%d", resp.StatusCode)
+	}
+
+	var data stationStreamData
+	if err := xml.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return "", err
+	}
+
+	fallback := ""
+	for _, u := range data.URLs {
+		if u.Timefree != "1" || u.PlaylistCreateURL == "" {
+			continue
+		}
+		// Prefer area-locked endpoint first for non-premium flow compatibility.
+		if u.Arefree == "0" {
+			return u.PlaylistCreateURL, nil
+		}
+		if fallback == "" {
+			fallback = u.PlaylistCreateURL
+		}
+	}
+	if fallback != "" {
+		return fallback, nil
+	}
+	return timeshiftPlaylistEndpoint, nil
+}
+
+type stationStreamData struct {
+	URLs []stationStreamURL `xml:"url"`
+}
+
+type stationStreamURL struct {
+	Arefree           string `xml:"areafree,attr"`
+	Timefree          string `xml:"timefree,attr"`
+	PlaylistCreateURL string `xml:"playlist_create_url"`
 }
 
 func (c *Client) requestTimeshiftPlaylistURI(ctx context.Context, method, endpoint string) (string, error) {
